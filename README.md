@@ -1,4 +1,4 @@
-# SkillMatrix (LMS) - Project Foundation
+# SkillMatrix (LMS) - Phase 2A Approved
 
 SkillMatrix is a production-grade Learning Management System (LMS) built with React, Express, Node.js, and MongoDB.
 
@@ -38,9 +38,20 @@ SkillMatrix/
      │   ├── logger/        # Pino structured logger configuration
      │   ├── middlewares/   # Express security / logging / error handlers
      │   ├── responses/     # Standardized JSON response formatting
-     │   └── utilities/     # Pure utility algorithms (slugs, dates, URLs)
+     │   ├── utilities/     # Pure utility algorithms (slugs, dates, URLs)
+     │   ├── models/        # Mongoose database models (User)
+     │   ├── controllers/   # REST Controllers (Authentication)
+     │   ├── services/      # Business logic services (Auth, Password, JWT)
+     │   └── validators/    # Payload validation schemas (Zod)
      └── server.js          # Server bootstrap entry point
 ```
+
+---
+
+## Phase 2A: Backend Authentication
+Phase 2A implements the secure backend authentication system using JWT access tokens, rotated HttpOnly refresh cookies, password encryption, Zod filters, and session validation hooks.
+
+- **[Phase 2A Completion Audit Report](docs/10_phase2a_audit.md)**: Detailed verification logs, audit matrix, security checklists, and Vitest endpoint validations.
 
 ---
 
@@ -87,11 +98,12 @@ Create a `/server/.env` file based on `/server/.env.example`:
 - `npm run lint`: Validates files across both projects using ESLint rules.
 - `npm run format`: Formats code throughout the codebase using Prettier rules.
 - `npm run build`: Packages both applications for production distribution.
+- `npm run test --prefix server`: Executes the Vitest backend authentication integration tests.
 
 ---
 
 ## Future Roadmap
-- **Phase 2**: Authentication & Registration Portal (JWT + cookie token management).
+- **Phase 2B**: Frontend Authentication (React context, hooks, layout routing, portals).
 - **Phase 3**: Course catalog discovery, file uploads, and content schemas.
 - **Phase 4**: Enrollment logs and course administration controls.
 - **Phase 5**: Video lesson viewer and player progress logging.
