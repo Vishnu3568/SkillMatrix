@@ -49,7 +49,11 @@ app.use(cookieParser());
 // 4. Request Sanitization
 app.use(mongoSanitize());
 
-// 5. Catch-all 404 Route handler
+// 5. API Routes
+const authRouter = require('./routes/auth');
+app.use('/api/auth', authRouter);
+
+// 6. Catch-all 404 Route handler
 app.use((req, res, next) => {
   next(new NotFoundError(`Route ${req.method} ${req.originalUrl} not found`));
 });
