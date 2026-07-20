@@ -3,21 +3,21 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "backend",
-    "frontend"
+    "server",
+    "client"
   ],
   "scripts": {
-    "dev:backend": "npm run dev --prefix backend",
-    "dev:frontend": "npm run dev --prefix frontend",
-    "lint:backend": "npm run lint --prefix backend",
-    "lint:frontend": "npm run lint --prefix frontend",
-    "lint": "npm run lint:backend && npm run lint:frontend",
-    "format:backend": "npm run format --prefix backend",
-    "format:frontend": "npm run format --prefix frontend",
-    "format": "npm run format:backend && npm run format:frontend",
-    "build:backend": "npm run build --prefix backend",
-    "build:frontend": "npm run build --prefix frontend",
-    "build": "npm run build:backend && npm run build:frontend"
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "lint:server": "npm run lint --prefix server",
+    "lint:client": "npm run lint --prefix client",
+    "lint": "npm run lint:server && npm run lint:client",
+    "format:server": "npm run format --prefix server",
+    "format:client": "npm run format --prefix client",
+    "format": "npm run format:server && npm run format:client",
+    "build:server": "npm run build --prefix server",
+    "build:client": "npm run build --prefix client",
+    "build": "npm run build:server && npm run build:client"
   },
   "devDependencies": {
     "prettier": "^3.2.5"
