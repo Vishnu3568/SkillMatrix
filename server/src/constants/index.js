@@ -45,8 +45,15 @@ const MESSAGES = {
   RATE_LIMIT_EXCEEDED: 'Too many requests from this IP, please try again later.',
 };
 
+const USER_STATUS = {
+  ACTIVE: 'active',
+  BLOCKED: 'blocked',
+  INACTIVE: 'inactive',
+};
+
 module.exports = {
   ROLES,
+  USER_STATUS,
   COURSE_STATUS,
   COURSE_LEVELS,
   PROGRESS_STATUS,
