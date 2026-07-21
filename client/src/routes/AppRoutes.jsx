@@ -17,6 +17,13 @@ const Login = lazy(() => import('../pages/Login'));
 const Register = lazy(() => import('../pages/Register'));
 const NotFound = lazy(() => import('../pages/NotFound'));
 
+// Course modules
+const CourseCatalog = lazy(() => import('../pages/student/CourseCatalog'));
+const CourseDetails = lazy(() => import('../pages/CourseDetails'));
+const CourseManagement = lazy(() => import('../pages/admin/CourseManagement'));
+const CourseForm = lazy(() => import('../pages/admin/CourseForm'));
+
+
 function PagePlaceholder({ name, phase }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-20 px-4 gap-4 max-w-md mx-auto">
@@ -54,7 +61,8 @@ export default function AppRoutes() {
           {/* Public Pages */}
           <Route path={ROUTES.HOME} element={<SharedLayout />}>
             <Route index element={<Home />} />
-            <Route path={ROUTES.COURSES} element={<PagePlaceholder name="Courses Catalog" phase="Phase 4 (Course/Lesson CRUD)" />} />
+            <Route path={ROUTES.COURSES} element={<CourseCatalog />} />
+            <Route path="/courses/:slug" element={<CourseDetails />} />
             <Route path="/ui-test" element={<UiTest />} />
             
             {/* Guest-only auth routes */}
@@ -77,7 +85,9 @@ export default function AppRoutes() {
             <Route element={<RoleRoute allowedRoles={['admin']} />}>
               <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminLayout />}>
                 <Route index element={<PagePlaceholder name="Admin Console" phase="Phase 4 (Course/Lesson CRUD)" />} />
-                <Route path="/admin/courses" element={<PagePlaceholder name="Courses Administration" phase="Phase 4 (Course CRUD)" />} />
+                <Route path="/admin/courses" element={<CourseManagement />} />
+                <Route path="/admin/courses/new" element={<CourseForm />} />
+                <Route path="/admin/courses/edit/:id" element={<CourseForm />} />
                 <Route path="/admin/lessons" element={<PagePlaceholder name="Lessons Administration" phase="Phase 4 (Lesson CRUD)" />} />
                 <Route path="/admin/students" element={<PagePlaceholder name="Students Records" phase="Phase 5 (Enrollments/Progress)" />} />
                 <Route path="/admin/settings" element={<PagePlaceholder name="Administrative Settings" phase="Phase 6 (Analytics)" />} />
