@@ -51,7 +51,9 @@ app.use(mongoSanitize());
 
 // 5. API Routes
 const authRouter = require('./routes/auth');
+const courseRouter = require('./routes/course');
 app.use('/api/auth', authRouter);
+app.use('/api/courses', courseRouter);
 
 // 6. Catch-all 404 Route handler
 app.use((req, res, next) => {
