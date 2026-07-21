@@ -1,29 +1,24 @@
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../constants/routes';
+import Button from '../components/common/Button';
 
 export default function NotFound() {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        padding: '5rem 1.5rem',
-        gap: '1.5rem',
-      }}
-    >
-      <div style={{ fontSize: '3rem' }}>❓</div>
-      <h1 style={{ fontSize: '3.5rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>404</h1>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+    <div className="flex flex-col items-center justify-center text-center py-20 px-4 gap-6">
+      <div className="text-6xl animate-bounce">❓</div>
+      <h1 className="text-6xl sm:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400 leading-none">
+        404
+      </h1>
+      <h2 className="text-xl sm:text-2xl font-extrabold text-slate-100">
         Page Not Found
       </h2>
-      <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', fontSize: '0.975rem', lineHeight: 1.6 }}>
-        The page you are looking for does not exist or has been moved to another location.
+      <p className="text-slate-400 max-w-sm text-sm sm:text-base leading-relaxed">
+        The page you are looking for does not exist, has been moved, or you might not have authorization parameters.
       </p>
-      <Link to={ROUTES.HOME} className="btn btn-primary" style={{ marginTop: '1rem' }}>
-        Return Home
+      <Link to={ROUTES.HOME} className="mt-4">
+        <Button variant="primary">
+          Return Home
+        </Button>
       </Link>
     </div>
   );
