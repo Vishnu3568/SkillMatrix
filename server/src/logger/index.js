@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const pino = require('pino');
 const pinoHttp = require('pino-http');
 const env = require('../config/env');
@@ -33,6 +34,13 @@ const logger = pino(pinoOptions);
 
 const httpLogger = pinoHttp({
   logger,
+  genReqId: function (req, res) {
+    const existingId = req.id || req.headers['x-request-id'];
+    if (existingId) return existingId;
+    const id = crypto.randomUUID();
+    res.setHeader('x-request-id', id);
+    return id;
+  },
   customSuccessMessage: (req, res, responseTime) => {
     return `${req.method} ${req.originalUrl || req.url} - Status ${res.statusCode} - ${responseTime}ms`;
   },

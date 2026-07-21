@@ -4,4 +4,6 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   DASHBOARD: '/dashboard',
+  ADMIN_DASHBOARD: '/admin',
+  STUDENT_DASHBOARD: '/student',
 };
