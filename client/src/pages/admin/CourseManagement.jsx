@@ -223,6 +223,9 @@ export default function CourseManagement() {
 
               {/* Action buttons */}
               <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <Link to={`/admin/courses/${course._id}/lessons`}>
+                  <Button variant="outline" size="sm" className="border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10">Syllabus</Button>
+                </Link>
                 <Link to={`/admin/courses/edit/${course._id}`}>
                   <Button variant="outline" size="sm">Edit</Button>
                 </Link>
