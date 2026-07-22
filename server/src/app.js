@@ -59,12 +59,18 @@ const {
   myLearningRouter,
   adminEnrollmentRouter,
 } = require('./routes/enrollment');
+const {
+  lessonProgressRouter,
+  courseProgressRouter,
+} = require('./routes/progress');
 
 app.use('/api/auth', authRouter);
 app.use('/api/courses', courseRouter);
 app.use('/api/courses/:courseId/lessons', courseLessonRouter);
 app.use('/api/courses/:courseId/enroll', courseEnrollmentRouter);
+app.use('/api/courses/:courseId', courseProgressRouter);
 app.use('/api/lessons', lessonRouter);
+app.use('/api/lessons/:lessonId', lessonProgressRouter);
 app.use('/api/enrollments', enrollmentRouter);
 app.use('/api/my-learning', myLearningRouter);
 app.use('/api/admin/enrollments', adminEnrollmentRouter);
