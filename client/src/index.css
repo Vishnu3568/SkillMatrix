@@ -4,14 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ========================
+   DARK THEME (default)
+   ======================== */
 :root {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: dark;
-  color: #e2e8f0;
-  background-color: #0b0f19;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -21,14 +22,16 @@
   --bg-main: #0b0f19;
   --bg-card: rgba(17, 24, 39, 0.7);
   --bg-nav: rgba(11, 15, 25, 0.8);
-  
+  --bg-surface: #0f172a;
+  --bg-input: #1e293b;
+
   --primary: #6366f1;
   --primary-glow: rgba(99, 102, 241, 0.15);
   --primary-hover: #4f46e5;
-  
+
   --secondary: #10b981;
   --secondary-glow: rgba(16, 185, 129, 0.15);
-  
+
   --danger: #ef4444;
 
   --border: rgba(255, 255, 255, 0.08);
@@ -45,6 +48,38 @@
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ========================
+   LIGHT THEME overrides
+   ======================== */
+.light {
+  color-scheme: light;
+
+  --bg-main: #f8fafc;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-nav: rgba(255, 255, 255, 0.9);
+  --bg-surface: #ffffff;
+  --bg-input: #f1f5f9;
+
+  --primary: #4f46e5;
+  --primary-glow: rgba(79, 70, 229, 0.1);
+  --primary-hover: #4338ca;
+
+  --secondary: #059669;
+  --secondary-glow: rgba(5, 150, 105, 0.1);
+
+  --danger: #dc2626;
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-focus: rgba(79, 70, 229, 0.4);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-glow: 0 0 20px 0 rgba(79, 70, 229, 0.1);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -53,10 +88,25 @@
 
 body {
   min-height: 100vh;
+  color: var(--text-primary);
+  background: var(--bg-main);
+  overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Dark body gradient overlay */
+.dark body,
+:root:not(.light) body {
   background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 400px),
               radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.05), transparent 400px),
               #0b0f19;
-  overflow-x: hidden;
+}
+
+/* Light body gradient overlay */
+.light body {
+  background: radial-gradient(circle at top right, rgba(79, 70, 229, 0.04), transparent 400px),
+              radial-gradient(circle at bottom left, rgba(5, 150, 105, 0.03), transparent 400px),
+              #f8fafc;
 }
 
 a {
@@ -76,6 +126,9 @@ button {
   font-family: inherit;
 }
 
+/* ========================
+   UTILITY CLASSES
+   ======================== */
 .glass {
   background: var(--bg-card);
   backdrop-filter: blur(12px);
@@ -123,3 +176,60 @@ button {
   margin: 0 auto;
   padding: 0 1.5rem;
 }
+
+/* ========================
+   THEME-AWARE TAILWIND
+   Override slate palette for light mode
+   so components using bg-slate-*, text-slate-*, border-slate-* respond.
+   ======================== */
+.light .bg-slate-950 { background-color: #f8fafc !important; }
+.light .bg-slate-900 { background-color: #ffffff !important; }
+.light .bg-slate-900\/80 { background-color: rgba(255,255,255,0.9) !important; }
+.light .bg-slate-900\/40 { background-color: rgba(241,245,249,0.6) !important; }
+.light .bg-slate-900\/30 { background-color: rgba(241,245,249,0.4) !important; }
+.light .bg-slate-900\/20 { background-color: rgba(241,245,249,0.3) !important; }
+.light .bg-slate-900\/10 { background-color: rgba(241,245,249,0.15) !important; }
+.light .bg-slate-800 { background-color: #f1f5f9 !important; }
+.light .bg-slate-800\/60 { background-color: rgba(226,232,240,0.6) !important; }
+
+.light .text-slate-100 { color: #0f172a !important; }
+.light .text-slate-200 { color: #1e293b !important; }
+.light .text-slate-300 { color: #334155 !important; }
+.light .text-slate-400 { color: #475569 !important; }
+.light .text-slate-500 { color: #64748b !important; }
+.light .text-slate-600 { color: #94a3b8 !important; }
+
+.light .border-slate-800 { border-color: #e2e8f0 !important; }
+.light .border-slate-800\/60 { border-color: rgba(226,232,240,0.6) !important; }
+.light .border-slate-800\/50 { border-color: rgba(226,232,240,0.5) !important; }
+.light .border-slate-900 { border-color: #e2e8f0 !important; }
+.light .border-slate-900\/50 { border-color: rgba(226,232,240,0.5) !important; }
+.light .border-white\/5 { border-color: rgba(0,0,0,0.06) !important; }
+.light .border-white\/10 { border-color: rgba(0,0,0,0.08) !important; }
+
+.light .divide-white\/5 > :not(:last-child) { border-color: rgba(0,0,0,0.06) !important; }
+
+/* Card backgrounds in light mode */
+.light .bg-gradient-to-br.from-slate-900 { --tw-gradient-from: #ffffff !important; }
+.light .to-indigo-950\/40 { --tw-gradient-to: rgba(224,231,255,0.4) !important; }
+
+/* Input fields in light mode */
+.light input, .light textarea, .light select {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+.light input::placeholder, .light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+.light input:focus, .light textarea:focus, .light select:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px var(--primary-glow) !important;
+}
+
+/* Toast containers in light mode */
+.light .bg-slate-900.border-emerald-500\/30 { background-color: #f0fdf4 !important; border-color: rgba(16,185,129,0.3) !important; }
+.light .bg-slate-900.border-rose-500\/30 { background-color: #fef2f2 !important; border-color: rgba(239,68,68,0.3) !important; }
+.light .bg-slate-900.border-amber-500\/30 { background-color: #fffbeb !important; border-color: rgba(245,158,11,0.3) !important; }
+.light .bg-slate-900.border-indigo-500\/30 { background-color: #eef2ff !important; border-color: rgba(99,102,241,0.3) !important; }
+
