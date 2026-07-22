@@ -52,6 +52,21 @@ const USER_STATUS = {
   INACTIVE: 'inactive',
 };
 
+const RESOURCE_TYPES = {
+  PDF: 'pdf',
+  LINK: 'link',
+  ZIP: 'zip',
+  CODE: 'code',
+  IMAGE: 'image',
+  OTHER: 'other',
+};
+
+const ENROLLMENT_STATUS = {
+  ACTIVE: 'active',
+  CANCELLED: 'cancelled',
+  COMPLETED: 'completed',
+};
+
 module.exports = {
   ROLES,
   USER_STATUS,
@@ -60,4 +75,6 @@ module.exports = {
   PROGRESS_STATUS,
   HTTP_STATUS,
   MESSAGES,
+  RESOURCE_TYPES,
+  ENROLLMENT_STATUS,
 };
