@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import * as courseService from '../services/courseService';
+import * as lessonService from '../services/lessonService';
+import * as enrollmentService from '../services/enrollmentService';
+import { useAuth } from '../context/AuthContext';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import Loader from '../components/common/Loader';
@@ -8,14 +11,25 @@ import ErrorState from '../components/common/ErrorState';
 import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
 import Divider from '../components/common/Divider';
+import ConfirmDialog from '../components/common/ConfirmDialog';
+import useToast from '../hooks/useToast';
 import { ROUTES } from '../constants/routes';
 
 export default function CourseDetails() {
   const { slug } = useParams();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { isAuthenticated, currentUser } = useAuth();
   
   const [course, setCourse] = useState(null);
+  const [lessons, setLessons] = useState([]);
+  const [isEnrolled, setIsEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Enrollment confirmation dialog states
+  const [enrollConfirmOpen, setEnrollConfirmOpen] = useState(false);
+  const [enrollLoading, setEnrollLoading] = useState(false);
 
   useEffect(() => {
     const loadCourse = async () => {
@@ -23,8 +37,23 @@ export default function CourseDetails() {
       setError('');
       try {
         const response = await courseService.getCourse(slug);
-        if (response.success) {
-          setCourse(response.data.course);
+        if (response.success && response.data.course) {
+          const c = response.data.course;
+          setCourse(c);
+          
+          // Fetch real syllabus lessons
+          const lessonsRes = await lessonService.getLessons(c._id);
+          if (lessonsRes.success) {
+            setLessons(lessonsRes.data.lessons);
+          }
+
+          // Check student enrollment status if logged in
+          if (isAuthenticated && currentUser?.role === 'student') {
+            const enrollRes = await enrollmentService.getEnrollmentStatus(c._id);
+            if (enrollRes.success) {
+              setIsEnrolled(enrollRes.data.isEnrolled);
+            }
+          }
         }
       } catch (err) {
         if (err.response?.status === 404) {
@@ -37,9 +66,27 @@ export default function CourseDetails() {
       }
     };
     loadCourse();
-  }, [slug]);
+  }, [slug, isAuthenticated, currentUser]);
 
-  if (loading) return <Loader fullscreen message="Fetching course syllabus..." />;
+  const handleEnroll = async () => {
+    if (!course) return;
+    setEnrollLoading(true);
+    try {
+      const response = await enrollmentService.enrollInCourse(course._id);
+      if (response.success) {
+        setIsEnrolled(true);
+        toast.success('Successfully enrolled in course!');
+        setEnrollConfirmOpen(false);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.error?.message || 'Failed to enroll in course';
+      toast.error(msg);
+    } finally {
+      setEnrollLoading(false);
+    }
+  };
+
+  if (loading) return <Loader fullscreen message="Fetching course details..." />;
 
   if (error || !course) {
     return (
@@ -68,13 +115,7 @@ export default function CourseDetails() {
     'No previous domain-specific advanced knowledge required.',
   ];
 
-  // Placeholder syllabus lessons
-  const placeholderLessons = [
-    { title: 'Introduction & Course Syllabus Overview', duration: '12 mins' },
-    { title: 'Environment Setup and Core Installation Steps', duration: '25 mins' },
-    { title: 'Building the First Functional Blueprint', duration: '40 mins' },
-    { title: 'Advanced Concepts and Structural Refactoring', duration: '55 mins' },
-  ];
+  const firstLessonSlug = lessons[0]?.slug;
 
   return (
     <div className="space-y-8">
@@ -84,63 +125,67 @@ export default function CourseDetails() {
           {/* Thumbnail */}
           <div className="h-44 sm:h-52 w-full md:w-80 bg-slate-950 rounded-xl overflow-hidden border border-slate-800/80 shrink-0">
             {course.thumbnailUrl ? (
-              <img 
-                src={course.thumbnailUrl} 
-                alt={course.title} 
+              <img
+                src={course.thumbnailUrl}
+                alt={course.title}
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="h-full w-full flex items-center justify-center text-slate-600 font-extrabold text-2xl select-none bg-slate-950">
+              <div className="h-full w-full flex items-center justify-center text-slate-700 font-black text-3xl select-none">
                 📚 {course.category}
               </div>
             )}
           </div>
 
-          {/* Details */}
-          <div className="flex-1 space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-black uppercase text-indigo-400 tracking-wider">
+          {/* Core Info */}
+          <div className="flex-1 space-y-4 text-center md:text-left">
+            <div className="flex items-center justify-center md:justify-start gap-2.5 flex-wrap">
+              <span className="text-xs uppercase tracking-widest font-black text-indigo-400">
                 {course.category}
               </span>
-              <span className="text-slate-600 font-bold select-none">•</span>
-              <Badge variant="primary">
+              <Badge variant="primary" className="uppercase font-bold">
                 {course.level}
               </Badge>
-              {course.status !== 'published' && (
-                <Badge variant="warning" className="uppercase">
-                  {course.status}
+              <Badge variant={course.status === 'published' ? 'success' : 'warning'} className="uppercase font-bold">
+                {course.status}
+              </Badge>
+              {isEnrolled && (
+                <Badge variant="success" className="uppercase font-bold">
+                  ✓ Enrolled
                 </Badge>
               )}
             </div>
-            
-            <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-100 tracking-tight leading-tight">
+
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-100 tracking-tight leading-tight">
               {course.title}
             </h1>
-            
-            <p className="text-slate-400 text-sm sm:text-base font-medium leading-relaxed max-w-2xl">
+
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
               {course.shortDescription}
             </p>
 
-            <div className="flex items-center gap-6 text-xs sm:text-sm text-slate-400 font-semibold pt-2">
-              <span>⏳ {course.estimatedDuration} minutes</span>
-              <span className="text-slate-600">|</span>
-              <div className="flex items-center gap-2">
-                <Avatar name={course.createdBy?.fullName} size="sm" />
-                <span className="text-slate-300 font-bold">{course.createdBy?.fullName || 'Academic Admin'}</span>
+            <div className="pt-2 flex items-center justify-center md:justify-start gap-6 text-xs text-slate-400 font-semibold">
+              <div className="flex items-center gap-1.5">
+                <span>⏱ Duration:</span>
+                <strong className="text-slate-200">{course.estimatedDuration} mins</strong>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span>📖 Syllabus:</span>
+                <strong className="text-slate-200">{lessons.length} lessons</strong>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Main Grid: Info columns */}
+      {/* Main Grid Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Columns */}
+        {/* Left Columns (Description, Outcomes, Syllabus) */}
         <div className="lg:col-span-2 space-y-8">
-          {/* 2. Course Description */}
+          {/* 2. Detailed Description */}
           <Card>
-            <h2 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
-              📄 Course Description
+            <h2 className="text-lg font-bold text-slate-100 mb-3 flex items-center gap-2">
+              📝 Detailed Description
             </h2>
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed whitespace-pre-line">
               {course.description}
@@ -152,10 +197,10 @@ export default function CourseDetails() {
             <h2 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
               🎯 Learning Outcomes
             </h2>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {outcomes.map((outcome, index) => (
                 <li key={index} className="flex items-start gap-2.5 text-slate-300 text-sm">
-                  <span className="text-indigo-400 shrink-0 select-none">✔</span>
+                  <span className="text-indigo-400 font-bold select-none">✓</span>
                   <span>{outcome}</span>
                 </li>
               ))}
@@ -177,42 +222,66 @@ export default function CourseDetails() {
             </ul>
           </Card>
 
-          {/* 5. Lesson List (Empty Placeholder) */}
+          {/* 5. Lesson List */}
           <Card>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                 📖 Curriculum Syllabus
               </h2>
-              <Badge variant="info">4 Lessons</Badge>
+              <Badge variant="info">{lessons.length} Lessons</Badge>
             </div>
             
-            {/* Structured Lesson Rows (Disabled) */}
-            <div className="divide-y divide-white/5">
-              {placeholderLessons.map((lesson, index) => (
-                <div key={index} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 text-slate-400 select-none">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-slate-600 font-bold w-6">0{index + 1}</span>
-                    <span className="text-sm font-semibold hover:text-slate-300 cursor-not-allowed">
-                      {lesson.title}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-500">{lesson.duration}</span>
-                    <span className="text-xs text-slate-600">🔒</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <p className="mt-5 text-[10px] text-center text-slate-500 font-semibold leading-relaxed pt-4 border-t border-white/5">
-              * Lessons are currently locked. Lesson playback and interactive video playback screens will be unlocked in **Phase 5**.
-            </p>
+            {lessons.length === 0 ? (
+              <p className="text-xs text-slate-500 font-semibold italic text-center py-6">
+                No lessons added to this course curriculum yet.
+              </p>
+            ) : (
+              <div className="divide-y divide-white/5">
+                {lessons.map((lesson, index) => {
+                  const canAccess = currentUser?.role === 'admin' || isEnrolled || lesson.isPreview;
+                  return (
+                    <div key={lesson._id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 text-slate-300">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="text-xs text-slate-500 font-bold w-6">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                        {canAccess ? (
+                          <Link 
+                            to={`/courses/${course.slug}/lessons/${lesson.slug}`}
+                            className="text-sm font-semibold hover:text-indigo-400 transition-colors truncate"
+                          >
+                            {lesson.title}
+                          </Link>
+                        ) : (
+                          <span className="text-sm font-semibold text-slate-500 select-none truncate">
+                            {lesson.title}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-xs font-bold text-slate-500">
+                          {Math.round(lesson.duration / 60)} mins
+                        </span>
+                        {lesson.isPreview && (
+                          <Badge variant="primary" className="text-[9px]">Preview</Badge>
+                        )}
+                        {!canAccess ? (
+                          <Badge variant="danger" className="text-[9px]">Locked 🔒</Badge>
+                        ) : (
+                          <Badge variant="success" className="text-[9px]">Open 🔓</Badge>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
         </div>
 
         {/* Right Sidebar Column */}
         <div className="space-y-6">
-          {/* 6. Instructor placeholder */}
+          {/* 6. Instructor Profile */}
           <Card className="space-y-4">
             <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">Instructor Profile</h3>
             <div className="flex items-center gap-3.5">
@@ -228,7 +297,7 @@ export default function CourseDetails() {
             </div>
           </Card>
 
-          {/* 7. Enrollment CTA */}
+          {/* 7. Enrollment Desk */}
           <Card className="space-y-5">
             <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">Enrollment Desk</h3>
             
@@ -249,12 +318,46 @@ export default function CourseDetails() {
 
             <Divider className="my-0" />
 
-            <Button variant="primary" className="w-full justify-center" disabled>
-              Enroll Now (Scheduled)
-            </Button>
-            <p className="text-[10px] text-slate-500 text-center font-semibold leading-relaxed">
-              * Enrollment parameters and student registers will be fully configured during **Phase 5**.
-            </p>
+            {/* Dynamic Enrollment CTA */}
+            {!isAuthenticated ? (
+              <Button
+                variant="primary"
+                className="w-full justify-center"
+                onClick={() => navigate(ROUTES.LOGIN)}
+              >
+                Log in to Enroll
+              </Button>
+            ) : currentUser?.role === 'admin' ? (
+              <Button
+                variant="outline"
+                className="w-full justify-center"
+                onClick={() => navigate(`/admin/courses/${course._id}/lessons`)}
+              >
+                Manage Course Syllabus →
+              </Button>
+            ) : isEnrolled ? (
+              <Button
+                variant="primary"
+                className="w-full justify-center"
+                onClick={() => {
+                  if (firstLessonSlug) {
+                    navigate(`/courses/${course.slug}/lessons/${firstLessonSlug}`);
+                  } else {
+                    toast.info('No lessons uploaded for this course yet');
+                  }
+                }}
+              >
+                Continue Learning →
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                className="w-full justify-center"
+                onClick={() => setEnrollConfirmOpen(true)}
+              >
+                Enroll Now
+              </Button>
+            )}
           </Card>
 
           {/* Return Links */}
@@ -268,6 +371,17 @@ export default function CourseDetails() {
           </div>
         </div>
       </div>
+
+      {/* Enroll Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={enrollConfirmOpen}
+        onClose={() => setEnrollConfirmOpen(false)}
+        onConfirm={handleEnroll}
+        loading={enrollLoading}
+        title="Confirm Course Enrollment"
+        message={`Are you sure you want to enroll in "${course.title}"? This will grant full access to all published lessons in this course.`}
+        confirmText="Confirm Enrollment"
+      />
     </div>
   );
 }
