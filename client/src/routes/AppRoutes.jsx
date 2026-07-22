@@ -23,6 +23,15 @@ const CourseDetails = lazy(() => import('../pages/CourseDetails'));
 const CourseManagement = lazy(() => import('../pages/admin/CourseManagement'));
 const CourseForm = lazy(() => import('../pages/admin/CourseForm'));
 
+// Lesson modules
+const LessonManagement = lazy(() => import('../pages/admin/LessonManagement'));
+const LessonForm = lazy(() => import('../pages/admin/LessonForm'));
+const LessonPlayer = lazy(() => import('../pages/student/LessonPlayer'));
+
+// Student portal modules
+const MyLearning = lazy(() => import('../pages/student/MyLearning'));
+
+
 
 function PagePlaceholder({ name, phase }) {
   return (
@@ -63,6 +72,7 @@ export default function AppRoutes() {
             <Route index element={<Home />} />
             <Route path={ROUTES.COURSES} element={<CourseCatalog />} />
             <Route path="/courses/:slug" element={<CourseDetails />} />
+            <Route path="/courses/:courseSlug/lessons/:lessonSlug" element={<LessonPlayer />} />
             <Route path="/ui-test" element={<UiTest />} />
             
             {/* Guest-only auth routes */}
@@ -88,7 +98,10 @@ export default function AppRoutes() {
                 <Route path="/admin/courses" element={<CourseManagement />} />
                 <Route path="/admin/courses/new" element={<CourseForm />} />
                 <Route path="/admin/courses/edit/:id" element={<CourseForm />} />
-                <Route path="/admin/lessons" element={<PagePlaceholder name="Lessons Administration" phase="Phase 4 (Lesson CRUD)" />} />
+                <Route path="/admin/courses/:courseId/lessons" element={<LessonManagement />} />
+                <Route path="/admin/courses/:courseId/lessons/new" element={<LessonForm />} />
+                <Route path="/admin/courses/:courseId/lessons/edit/:id" element={<LessonForm />} />
+                <Route path="/admin/lessons" element={<Navigate to="/admin/courses" replace />} />
                 <Route path="/admin/students" element={<PagePlaceholder name="Students Records" phase="Phase 5 (Enrollments/Progress)" />} />
                 <Route path="/admin/settings" element={<PagePlaceholder name="Administrative Settings" phase="Phase 6 (Analytics)" />} />
               </Route>
@@ -97,8 +110,8 @@ export default function AppRoutes() {
             {/* Student Dashboard Workspace */}
             <Route element={<RoleRoute allowedRoles={['student']} />}>
               <Route path={ROUTES.STUDENT_DASHBOARD} element={<StudentLayout />}>
-                <Route index element={<PagePlaceholder name="Student Dashboard" phase="Phase 5 (Progress Viewer)" />} />
-                <Route path="/student/my-learning" element={<PagePlaceholder name="My Learning Portal" phase="Phase 5 (Progress Viewer)" />} />
+                <Route index element={<Navigate to="/student/my-learning" replace />} />
+                <Route path="/student/my-learning" element={<MyLearning />} />
                 <Route path="/student/profile" element={<PagePlaceholder name="Student Profile" phase="Phase 6 (Portfolio)" />} />
                 <Route path="/student/settings" element={<PagePlaceholder name="Student Settings" phase="Phase 6 (Portal customization)" />} />
               </Route>
