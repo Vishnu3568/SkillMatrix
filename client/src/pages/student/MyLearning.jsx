@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as enrollmentService from '../../services/enrollmentService';
+import * as progressService from '../../services/progressService';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Input from '../../components/common/Input';
@@ -8,6 +9,7 @@ import Button from '../../components/common/Button';
 import Skeleton from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
 import PageHeader from '../../components/common/PageHeader';
+import ProgressBar from '../../components/common/ProgressBar';
 import useToast from '../../hooks/useToast';
 
 export default function MyLearning() {
@@ -15,6 +17,7 @@ export default function MyLearning() {
   const toast = useToast();
 
   const [enrollments, setEnrollments] = useState([]);
+  const [progressMap, setProgressMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -28,9 +31,32 @@ export default function MyLearning() {
         page,
         limit: 6,
       });
+
       if (response.success) {
-        setEnrollments(response.data.enrollments);
+        const fetchedEnrollments = response.data.enrollments;
+        setEnrollments(fetchedEnrollments);
         setTotalPages(response.data.totalPages);
+
+        // Fetch course progress metrics for each enrolled course in parallel
+        const progressResults = await Promise.all(
+          fetchedEnrollments.map(async (item) => {
+            if (!item.courseId?._id) return { courseId: null, data: null };
+            try {
+              const pRes = await progressService.getCourseProgress(item.courseId._id);
+              return { courseId: item.courseId._id, data: pRes.data };
+            } catch (_) {
+              return { courseId: item.courseId._id, data: null };
+            }
+          })
+        );
+
+        const newMap = {};
+        progressResults.forEach((res) => {
+          if (res.courseId && res.data) {
+            newMap[res.courseId] = res.data;
+          }
+        });
+        setProgressMap(newMap);
       }
     } catch (err) {
       toast.error('Failed to load your enrolled courses');
@@ -50,7 +76,7 @@ export default function MyLearning() {
     <div className="space-y-8">
       <PageHeader
         title="My Learning Portal"
-        subtitle="Manage and continue your active course enrollments."
+        subtitle="Manage, track, and continue your active course enrollments."
         action={
           <Button variant="outline" onClick={() => navigate('/courses')}>
             🔍 Browse Courses
@@ -111,6 +137,11 @@ export default function MyLearning() {
               const course = item.courseId;
               if (!course) return null;
 
+              const cProgress = progressMap[course._id];
+              const completionPercent = cProgress?.completionPercentage || 0;
+              const completedCount = cProgress?.completedLessons || 0;
+              const totalCount = cProgress?.totalLessons || 0;
+
               const enrolledDate = new Date(item.enrolledAt).toLocaleDateString(undefined, {
                 year: 'numeric',
                 month: 'short',
@@ -123,7 +154,7 @@ export default function MyLearning() {
                   className="flex flex-col h-full hover:shadow-xl hover:shadow-indigo-500/5 hover:border-slate-700/60"
                 >
                   {/* Course Thumbnail */}
-                  <div className="h-44 w-full bg-slate-900 rounded-lg overflow-hidden border border-slate-800/80 mb-4 shrink-0">
+                  <div className="h-44 w-full bg-slate-900 rounded-lg overflow-hidden border border-slate-800/80 mb-4 shrink-0 relative">
                     {course.thumbnailUrl ? (
                       <img
                         src={course.thumbnailUrl}
@@ -135,10 +166,15 @@ export default function MyLearning() {
                         🎓 {course.category}
                       </div>
                     )}
+                    {completionPercent === 100 && (
+                      <div className="absolute top-2 right-2 bg-emerald-500 text-slate-950 font-black text-[10px] uppercase tracking-wider px-2 py-0.5 rounded shadow-lg">
+                        Completed ✓
+                      </div>
+                    )}
                   </div>
 
                   {/* Course Details */}
-                  <div className="flex-1 flex flex-col justify-between">
+                  <div className="flex-1 flex flex-col justify-between space-y-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] uppercase tracking-wider font-extrabold text-indigo-400">
@@ -154,12 +190,16 @@ export default function MyLearning() {
                       </p>
                     </div>
 
-                    <div className="pt-4 mt-4 border-t border-white/5 space-y-3">
+                    {/* Progress Bar Component */}
+                    <div className="space-y-1.5 pt-2 border-t border-white/5">
+                      <ProgressBar value={completionPercent} showLabel />
                       <div className="flex items-center justify-between text-[11px] text-slate-500 font-semibold">
                         <span>Enrolled: {enrolledDate}</span>
-                        <span>⏳ {course.estimatedDuration} mins</span>
+                        <span>{completedCount} / {totalCount} completed</span>
                       </div>
+                    </div>
 
+                    <div className="pt-2">
                       <Button
                         variant="primary"
                         size="sm"

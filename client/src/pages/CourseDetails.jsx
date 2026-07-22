@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import * as courseService from '../services/courseService';
 import * as lessonService from '../services/lessonService';
 import * as enrollmentService from '../services/enrollmentService';
+import * as progressService from '../services/progressService';
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
@@ -12,6 +13,7 @@ import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
 import Divider from '../components/common/Divider';
 import ConfirmDialog from '../components/common/ConfirmDialog';
+import ProgressBar from '../components/common/ProgressBar';
 import useToast from '../hooks/useToast';
 import { ROUTES } from '../constants/routes';
 
@@ -24,6 +26,7 @@ export default function CourseDetails() {
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [courseProgress, setCourseProgress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -47,11 +50,18 @@ export default function CourseDetails() {
             setLessons(lessonsRes.data.lessons);
           }
 
-          // Check student enrollment status if logged in
+          // Check student enrollment status and progress metrics if logged in
           if (isAuthenticated && currentUser?.role === 'student') {
             const enrollRes = await enrollmentService.getEnrollmentStatus(c._id);
-            if (enrollRes.success) {
-              setIsEnrolled(enrollRes.data.isEnrolled);
+            if (enrollRes.success && enrollRes.data.isEnrolled) {
+              setIsEnrolled(true);
+
+              const progressRes = await progressService.getCourseProgress(c._id);
+              if (progressRes.success) {
+                setCourseProgress(progressRes.data);
+              }
+            } else {
+              setIsEnrolled(false);
             }
           }
         }
@@ -77,6 +87,12 @@ export default function CourseDetails() {
         setIsEnrolled(true);
         toast.success('Successfully enrolled in course!');
         setEnrollConfirmOpen(false);
+
+        // Load initial course progress after enrollment
+        const progressRes = await progressService.getCourseProgress(course._id);
+        if (progressRes.success) {
+          setCourseProgress(progressRes.data);
+        }
       }
     } catch (err) {
       const msg = err.response?.data?.error?.message || 'Failed to enroll in course';
@@ -100,7 +116,6 @@ export default function CourseDetails() {
     );
   }
 
-  // Sample placeholder learning outcomes
   const outcomes = [
     'Gain comprehensive foundation principles in this domain.',
     'Build and structure real-world portfolio projects.',
@@ -108,14 +123,18 @@ export default function CourseDetails() {
     'Implement caching, validation, and database security guidelines.',
   ];
 
-  // Sample placeholder prerequisites
   const prerequisites = [
     'Basic syntax and programming logic familiarity.',
     'Local code environment setup and web browser utilities.',
     'No previous domain-specific advanced knowledge required.',
   ];
 
-  const firstLessonSlug = lessons[0]?.slug;
+  const targetLessonSlug =
+    courseProgress?.nextLesson?.slug ||
+    courseProgress?.lastLesson?.slug ||
+    lessons[0]?.slug;
+
+  const progressMap = courseProgress?.progressMap || {};
 
   return (
     <div className="space-y-8">
@@ -164,6 +183,16 @@ export default function CourseDetails() {
               {course.shortDescription}
             </p>
 
+            {/* Enrolled Progress Bar */}
+            {isEnrolled && courseProgress && (
+              <div className="pt-2 max-w-md">
+                <ProgressBar
+                  value={courseProgress.completionPercentage}
+                  showLabel
+                />
+              </div>
+            )}
+
             <div className="pt-2 flex items-center justify-center md:justify-start gap-6 text-xs text-slate-400 font-semibold">
               <div className="flex items-center gap-1.5">
                 <span>⏱ Duration:</span>
@@ -173,6 +202,14 @@ export default function CourseDetails() {
                 <span>📖 Syllabus:</span>
                 <strong className="text-slate-200">{lessons.length} lessons</strong>
               </div>
+              {isEnrolled && courseProgress && (
+                <div className="flex items-center gap-1.5">
+                  <span>✅ Completed:</span>
+                  <strong className="text-emerald-400">
+                    {courseProgress.completedLessons} / {courseProgress.totalLessons}
+                  </strong>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -180,9 +217,9 @@ export default function CourseDetails() {
 
       {/* Main Grid Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Columns (Description, Outcomes, Syllabus) */}
+        {/* Left Columns */}
         <div className="lg:col-span-2 space-y-8">
-          {/* 2. Detailed Description */}
+          {/* Detailed Description */}
           <Card>
             <h2 className="text-lg font-bold text-slate-100 mb-3 flex items-center gap-2">
               📝 Detailed Description
@@ -192,7 +229,7 @@ export default function CourseDetails() {
             </p>
           </Card>
 
-          {/* 3. Learning Outcomes */}
+          {/* Learning Outcomes */}
           <Card>
             <h2 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
               🎯 Learning Outcomes
@@ -207,7 +244,7 @@ export default function CourseDetails() {
             </ul>
           </Card>
 
-          {/* 4. Prerequisites */}
+          {/* Prerequisites */}
           <Card>
             <h2 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
               🛠 Prerequisites
@@ -222,7 +259,7 @@ export default function CourseDetails() {
             </ul>
           </Card>
 
-          {/* 5. Lesson List */}
+          {/* Lesson List */}
           <Card>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -239,6 +276,9 @@ export default function CourseDetails() {
               <div className="divide-y divide-white/5">
                 {lessons.map((lesson, index) => {
                   const canAccess = currentUser?.role === 'admin' || isEnrolled || lesson.isPreview;
+                  const lessonProg = progressMap[lesson._id.toString()];
+                  const isCompleted = lessonProg?.status === 'completed';
+
                   return (
                     <div key={lesson._id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 text-slate-300">
                       <div className="flex items-center gap-3 min-w-0">
@@ -248,9 +288,11 @@ export default function CourseDetails() {
                         {canAccess ? (
                           <Link 
                             to={`/courses/${course.slug}/lessons/${lesson.slug}`}
-                            className="text-sm font-semibold hover:text-indigo-400 transition-colors truncate"
+                            className={`text-sm font-semibold transition-colors truncate ${
+                              isCompleted ? 'text-emerald-400 font-bold' : 'hover:text-indigo-400'
+                            }`}
                           >
-                            {lesson.title}
+                            {isCompleted ? `✓ ${lesson.title}` : lesson.title}
                           </Link>
                         ) : (
                           <span className="text-sm font-semibold text-slate-500 select-none truncate">
@@ -265,10 +307,12 @@ export default function CourseDetails() {
                         {lesson.isPreview && (
                           <Badge variant="primary" className="text-[9px]">Preview</Badge>
                         )}
-                        {!canAccess ? (
+                        {isCompleted ? (
+                          <Badge variant="success" className="text-[9px]">Completed ✓</Badge>
+                        ) : !canAccess ? (
                           <Badge variant="danger" className="text-[9px]">Locked 🔒</Badge>
                         ) : (
-                          <Badge variant="success" className="text-[9px]">Open 🔓</Badge>
+                          <Badge variant="info" className="text-[9px]">Open 🔓</Badge>
                         )}
                       </div>
                     </div>
@@ -281,7 +325,7 @@ export default function CourseDetails() {
 
         {/* Right Sidebar Column */}
         <div className="space-y-6">
-          {/* 6. Instructor Profile */}
+          {/* Instructor Profile */}
           <Card className="space-y-4">
             <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">Instructor Profile</h3>
             <div className="flex items-center gap-3.5">
@@ -297,28 +341,42 @@ export default function CourseDetails() {
             </div>
           </Card>
 
-          {/* 7. Enrollment Desk */}
+          {/* Enrollment & Progress Desk */}
           <Card className="space-y-5">
-            <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">Enrollment Desk</h3>
+            <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">
+              {isEnrolled ? 'Course Progress' : 'Enrollment Desk'}
+            </h3>
             
-            <div className="space-y-3.5 text-sm text-slate-300">
-              <div className="flex items-center justify-between">
-                <span>Category</span>
-                <span className="font-bold text-slate-200">{course.category}</span>
+            {isEnrolled && courseProgress ? (
+              <div className="space-y-4">
+                <ProgressBar value={courseProgress.completionPercentage} showLabel />
+                <div className="flex items-center justify-between text-xs text-slate-300 font-semibold">
+                  <span>Lessons Completed</span>
+                  <span className="text-emerald-400 font-bold">
+                    {courseProgress.completedLessons} / {courseProgress.totalLessons}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span>Skill Level</span>
-                <span className="font-bold text-slate-200">{course.level}</span>
+            ) : (
+              <div className="space-y-3.5 text-sm text-slate-300">
+                <div className="flex items-center justify-between">
+                  <span>Category</span>
+                  <span className="font-bold text-slate-200">{course.category}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Skill Level</span>
+                  <span className="font-bold text-slate-200">{course.level}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Duration</span>
+                  <span className="font-bold text-slate-200">{course.estimatedDuration} mins</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span>Duration</span>
-                <span className="font-bold text-slate-200">{course.estimatedDuration} mins</span>
-              </div>
-            </div>
+            )}
 
             <Divider className="my-0" />
 
-            {/* Dynamic Enrollment CTA */}
+            {/* Dynamic CTA */}
             {!isAuthenticated ? (
               <Button
                 variant="primary"
@@ -340,8 +398,8 @@ export default function CourseDetails() {
                 variant="primary"
                 className="w-full justify-center"
                 onClick={() => {
-                  if (firstLessonSlug) {
-                    navigate(`/courses/${course.slug}/lessons/${firstLessonSlug}`);
+                  if (targetLessonSlug) {
+                    navigate(`/courses/${course.slug}/lessons/${targetLessonSlug}`);
                   } else {
                     toast.info('No lessons uploaded for this course yet');
                   }

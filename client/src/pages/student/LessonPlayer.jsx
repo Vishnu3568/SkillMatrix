@@ -1,27 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import * as lessonService from '../../services/lessonService';
 import * as enrollmentService from '../../services/enrollmentService';
+import * as progressService from '../../services/progressService';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
 import Button from '../../components/common/Button';
 import Divider from '../../components/common/Divider';
+import useToast from '../../hooks/useToast';
 import { useAuth } from '../../context/AuthContext';
 
 export default function LessonPlayer() {
   const { courseSlug, lessonSlug } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const { isAuthenticated, currentUser } = useAuth();
 
   const [lesson, setLesson] = useState(null);
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [isEnrolled, setIsEnrolled] = useState(false);
+
+  // Progress tracking states
+  const [lessonProgress, setLessonProgress] = useState(null);
+  const [courseProgressMap, setCourseProgressMap] = useState({});
+  const [markingComplete, setMarkingComplete] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const videoRef = useRef(null);
 
+  // Load lesson, course syllabus, and student progress metrics
   useEffect(() => {
     const loadLessonDetails = async () => {
       setLoading(true);
@@ -39,11 +50,28 @@ export default function LessonPlayer() {
             setLessons(syllabusRes.data.lessons);
           }
 
-          // Check enrollment status for logged in students
+          // Check enrollment status and load progress if logged in as student
           if (isAuthenticated && currentUser?.role === 'student') {
             const enrollRes = await enrollmentService.getEnrollmentStatus(l.courseId._id);
-            if (enrollRes.success) {
-              setIsEnrolled(enrollRes.data.isEnrolled);
+            if (enrollRes.success && enrollRes.data.isEnrolled) {
+              setIsEnrolled(true);
+
+              // 1. Signal starting this lesson session
+              await progressService.startLesson(l._id);
+
+              // 2. Fetch specific lesson progress
+              const progRes = await progressService.getLessonProgress(l._id);
+              if (progRes.success) {
+                setLessonProgress(progRes.data.progress);
+              }
+
+              // 3. Fetch overall course progress map for sidebar checkmarks
+              const cProgRes = await progressService.getCourseProgress(l.courseId._id);
+              if (cProgRes.success) {
+                setCourseProgressMap(cProgRes.data.progressMap || {});
+              }
+            } else {
+              setIsEnrolled(false);
             }
           }
         }
@@ -61,6 +89,62 @@ export default function LessonPlayer() {
     };
     loadLessonDetails();
   }, [lessonSlug, isAuthenticated, currentUser]);
+
+  // Periodic video watch time reporter (every 15s)
+  const reportWatchProgress = useCallback(async (seconds, percent) => {
+    if (!lesson || !isEnrolled || currentUser?.role !== 'student') return;
+    try {
+      const res = await progressService.updateProgress(lesson._id, {
+        watchTimeSeconds: seconds,
+        progressPercent: percent,
+      });
+      if (res.success && res.data.progress) {
+        setLessonProgress(res.data.progress);
+        if (res.data.progress.status === 'completed') {
+          setCourseProgressMap((prev) => ({
+            ...prev,
+            [lesson._id]: res.data.progress,
+          }));
+        }
+      }
+    } catch (_) {
+      // Silent error catch for background periodic reporting
+    }
+  }, [lesson, isEnrolled, currentUser]);
+
+  // Handle HTML5 video time updates
+  const handleTimeUpdate = () => {
+    if (videoRef.current && lesson && isEnrolled) {
+      const current = Math.floor(videoRef.current.currentTime);
+      const total = videoRef.current.duration || lesson.duration || 1;
+      const percent = Math.min(100, Math.round((current / total) * 100));
+
+      if (current % 10 === 0) {
+        reportWatchProgress(current, percent);
+      }
+    }
+  };
+
+  // Handle explicit "Mark as Complete" button action
+  const handleCompleteLesson = async () => {
+    if (!lesson || markingComplete) return;
+    setMarkingComplete(true);
+    try {
+      const res = await progressService.completeLesson(lesson._id);
+      if (res.success && res.data.progress) {
+        setLessonProgress(res.data.progress);
+        setCourseProgressMap((prev) => ({
+          ...prev,
+          [lesson._id]: res.data.progress,
+        }));
+        toast.success('Lesson marked as complete! 🎉');
+      }
+    } catch (err) {
+      toast.error('Failed to mark lesson as complete.');
+    } finally {
+      setMarkingComplete(false);
+    }
+  };
 
   if (loading) return <Loader fullscreen message="Buffering video player..." />;
 
@@ -101,6 +185,7 @@ export default function LessonPlayer() {
   };
 
   const embedUrl = getEmbedUrl(lesson.videoUrl);
+  const isLessonCompleted = lessonProgress?.status === 'completed';
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -116,10 +201,24 @@ export default function LessonPlayer() {
             <span className="text-slate-200">Lesson {String(activeIdx + 1).padStart(2, '0')}</span>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-100">{lesson.title}</h1>
-            {lesson.isPreview && <Badge variant="primary">Free Preview</Badge>}
-            {isEnrolled && <Badge variant="success">Enrolled Student</Badge>}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-100">{lesson.title}</h1>
+              {lesson.isPreview && <Badge variant="primary">Free Preview</Badge>}
+              {isLessonCompleted && <Badge variant="success">Completed ✓</Badge>}
+            </div>
+
+            {/* Complete Lesson CTA */}
+            {isEnrolled && currentUser?.role === 'student' && (
+              <Button
+                variant={isLessonCompleted ? 'outline' : 'primary'}
+                size="sm"
+                onClick={handleCompleteLesson}
+                disabled={markingComplete || isLessonCompleted}
+              >
+                {isLessonCompleted ? '✓ Completed' : markingComplete ? 'Saving...' : 'Mark as Complete ✓'}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -135,8 +234,11 @@ export default function LessonPlayer() {
             />
           ) : (
             <video
+              ref={videoRef}
               src={lesson.videoUrl}
               controls
+              onTimeUpdate={handleTimeUpdate}
+              onEnded={() => reportWatchProgress(lesson.duration, 100)}
               poster={lesson.thumbnailUrl}
               className="h-full w-full object-cover"
             />
@@ -226,7 +328,9 @@ export default function LessonPlayer() {
             {lessons.map((l, index) => {
               const isActive = l._id === lesson._id;
               const canAccess = currentUser?.role === 'admin' || isEnrolled || l.isPreview;
-              
+              const progRec = courseProgressMap[l._id];
+              const isCompleted = progRec?.status === 'completed';
+
               return (
                 <div 
                   key={l._id} 
@@ -244,10 +348,14 @@ export default function LessonPlayer() {
                       <Link 
                         to={`/courses/${courseSlug}/lessons/${l.slug}`}
                         className={`font-semibold hover:text-indigo-400 transition-colors truncate block ${
-                          isActive ? 'text-indigo-400' : 'text-slate-200'
+                          isCompleted
+                            ? 'text-emerald-400 font-bold'
+                            : isActive
+                            ? 'text-indigo-400'
+                            : 'text-slate-200'
                         }`}
                       >
-                        {l.title}
+                        {isCompleted ? `✓ ${l.title}` : l.title}
                       </Link>
                     ) : (
                       <span className="font-semibold text-slate-500 select-none truncate block cursor-not-allowed">
@@ -260,7 +368,11 @@ export default function LessonPlayer() {
                     <span className="text-[10px] text-slate-500 font-semibold">
                       {Math.round(l.duration / 60)}m
                     </span>
-                    {l.isPreview && <Badge variant="primary" className="text-[8px] px-1 py-0">Free</Badge>}
+                    {isCompleted ? (
+                      <Badge variant="success" className="text-[8px] px-1 py-0">Done ✓</Badge>
+                    ) : l.isPreview ? (
+                      <Badge variant="primary" className="text-[8px] px-1 py-0">Free</Badge>
+                    ) : null}
                     {!canAccess && <span className="text-slate-600" title="Locked">🔒</span>}
                   </div>
                 </div>
