@@ -52,8 +52,22 @@ app.use(mongoSanitize());
 // 5. API Routes
 const authRouter = require('./routes/auth');
 const courseRouter = require('./routes/course');
+const { courseLessonRouter, lessonRouter } = require('./routes/lesson');
+const {
+  courseEnrollmentRouter,
+  enrollmentRouter,
+  myLearningRouter,
+  adminEnrollmentRouter,
+} = require('./routes/enrollment');
+
 app.use('/api/auth', authRouter);
 app.use('/api/courses', courseRouter);
+app.use('/api/courses/:courseId/lessons', courseLessonRouter);
+app.use('/api/courses/:courseId/enroll', courseEnrollmentRouter);
+app.use('/api/lessons', lessonRouter);
+app.use('/api/enrollments', enrollmentRouter);
+app.use('/api/my-learning', myLearningRouter);
+app.use('/api/admin/enrollments', adminEnrollmentRouter);
 
 // 6. Catch-all 404 Route handler
 app.use((req, res, next) => {
