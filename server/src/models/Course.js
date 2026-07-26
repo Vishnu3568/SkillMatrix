@@ -72,6 +72,9 @@ const courseSchema = new mongoose.Schema(
 
 // We need a case-insensitive unique index for slug to prevent duplicate courses
 courseSchema.index({ slug: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+courseSchema.index({ status: 1, isDeleted: 1, category: 1, level: 1 });
+courseSchema.index({ title: 'text', shortDescription: 'text', tags: 'text' });
+courseSchema.index({ createdAt: -1 });
 
 // Pre-save hook: auto-generate unique slug if title has changed
 courseSchema.pre('save', async function (next) {
