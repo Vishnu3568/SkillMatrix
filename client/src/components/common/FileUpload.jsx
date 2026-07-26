@@ -8,7 +8,6 @@ import Button from './Button';
 export default function FileUpload({
   onFileSelect,
   accept = 'image/*',
-  maxSizeMb = 5,
   label = 'Upload File',
   hint = 'PNG, JPG, WEBP or GIF (max. 5MB)',
   loading = false,
