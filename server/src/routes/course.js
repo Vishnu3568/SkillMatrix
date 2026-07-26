@@ -1,13 +1,30 @@
 const express = require('express');
 const courseController = require('../controllers/course.controller');
 const validate = require('../middlewares/validate');
-const { createCourseSchema, updateCourseSchema } = require('../validators/course.validator');
+const {
+  createCourseSchema,
+  updateCourseSchema,
+  listCoursesQuerySchema,
+} = require('../validators/course.validator');
 const { authenticate, optionalAuthenticate, authorize } = require('../middlewares/auth');
 const { ROLES } = require('../constants');
 
 const router = express.Router();
 
-// Admin write endpoints
+// Public / Discovery Endpoints (Must be mounted before /:slug)
+router.get('/popular', optionalAuthenticate, courseController.getPopularCourses);
+router.get('/recommended', optionalAuthenticate, courseController.getRecommendedCourses);
+router.get('/recent-learning', authenticate, courseController.getRecentLearning);
+
+// Course List with Filters & Pagination
+router.get(
+  '/',
+  optionalAuthenticate,
+  validate(listCoursesQuerySchema, 'query'),
+  courseController.listCourses
+);
+
+// Admin Write Endpoints
 router.post(
   '/',
   authenticate,
@@ -16,11 +33,10 @@ router.post(
   courseController.createCourse
 );
 
-// Conditional read endpoints (Admin gets draft/archived; Student gets only published)
-router.get('/', optionalAuthenticate, courseController.listCourses);
+// Single Course Detail Route by Slug or ID
 router.get('/:slug', optionalAuthenticate, courseController.getCourseBySlug);
 
-// Admin update/delete endpoints
+// Admin Update/Delete Endpoints
 router.put(
   '/:id',
   authenticate,
