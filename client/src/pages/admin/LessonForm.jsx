@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import * as lessonService from '../../services/lessonService';
+import * as uploadService from '../../services/uploadService';
 import Input from '../../components/common/Input';
 import Textarea from '../../components/common/Textarea';
 import Select from '../../components/common/Select';
@@ -9,6 +10,7 @@ import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import PageHeader from '../../components/common/PageHeader';
 import Loader from '../../components/common/Loader';
+import FileUpload from '../../components/common/FileUpload';
 import useToast from '../../hooks/useToast';
 import { RESOURCE_TYPES } from '../../constants/lesson';
 
@@ -24,7 +26,7 @@ export default function LessonForm() {
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(15);
   const [isPreview, setIsPreview] = useState(false);
-  
+
   // Resource builder state
   const [resources, setResources] = useState([]);
   const [resTitle, setResTitle] = useState('');
@@ -34,6 +36,7 @@ export default function LessonForm() {
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [uploadingResource, setUploadingResource] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
 
   const resourceTypeOptions = Object.entries(RESOURCE_TYPES).map(([key, val]) => ({
@@ -47,10 +50,6 @@ export default function LessonForm() {
     const loadLessonData = async () => {
       setFetching(true);
       try {
-        // Fetch lesson by ID or slug? Wait, getLesson(slug) queries by slug or ID?
-        // Wait, on the backend: `getLessonBySlug` checks `mongoose.Types.ObjectId.isValid(slugOrId)` and queries by `_id`!
-        // That means `getLesson(id)` works out of the box because we added thatObjectId support in course services, and we should check if we did the same in `lesson.service.js`.
-        // Let's check `lesson.service.js` around line 110 to see if it checks for ObjectId!
         const response = await lessonService.getLesson(id);
         if (response.success && response.data.lesson) {
           const l = response.data.lesson;
@@ -72,15 +71,35 @@ export default function LessonForm() {
     loadLessonData();
   }, [courseId, id, isEditMode, navigate, toast]);
 
+  const handleUploadResourceFile = async (file) => {
+    setUploadingResource(true);
+    try {
+      const res = await uploadService.uploadResource(file);
+      if (res.success && res.data.resource) {
+        const rData = res.data.resource;
+        const newResource = {
+          title: rData.title,
+          type: rData.type,
+          url: rData.url,
+          size: rData.size,
+        };
+        setResources((prev) => [...prev, newResource]);
+        toast.success(`Resource "${rData.title}" uploaded and added successfully!`);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.error?.message || 'Failed to upload resource file';
+      toast.error(msg);
+    } finally {
+      setUploadingResource(false);
+    }
+  };
+
   const validateForm = () => {
     const errors = {};
     if (!title.trim()) errors.title = 'Title is required';
     if (!description.trim()) errors.description = 'Description is required';
     if (!videoUrl.trim() || !/^(http|https):\/\/[^\s]+/.test(videoUrl)) {
       errors.videoUrl = 'Valid video URL is required';
-    }
-    if (thumbnailUrl && !/^(http|https):\/\/[^\s]+/.test(thumbnailUrl)) {
-      errors.thumbnailUrl = 'Invalid thumbnail URL format';
     }
     if (!durationMinutes || durationMinutes < 1) {
       errors.durationMinutes = 'Duration must be at least 1 minute';
@@ -96,7 +115,7 @@ export default function LessonForm() {
       toast.warning('Resource title is required');
       return;
     }
-    if (!resUrl.trim() || !/^(http|https):\/\/[^\s]+/.test(resUrl)) {
+    if (!resUrl.trim()) {
       toast.warning('Valid Resource URL is required');
       return;
     }
@@ -109,8 +128,6 @@ export default function LessonForm() {
     };
 
     setResources([...resources, newResource]);
-    
-    // Clear resource form fields
     setResTitle('');
     setResUrl('');
     setResSize('1 MB');
@@ -132,7 +149,7 @@ export default function LessonForm() {
       description,
       videoUrl,
       thumbnailUrl,
-      duration: durationMinutes * 60, // Convert minutes to seconds
+      duration: durationMinutes * 60,
       isPreview,
       resources,
     };
@@ -244,21 +261,33 @@ export default function LessonForm() {
           </Card>
         </div>
 
-        {/* Resources metadata builder sidebar */}
+        {/* Resources builder sidebar */}
         <div className="space-y-6">
-          {/* Add resource form card */}
+          {/* File Upload Component Card */}
+          <Card className="space-y-3">
+            <FileUpload
+              label="Upload File Resource"
+              accept="application/pdf,application/zip,application/x-zip-compressed,text/plain,image/*"
+              maxSizeMb={50}
+              hint="Upload PDF, ZIP, TXT or Images (max. 50MB)"
+              loading={uploadingResource}
+              onFileSelect={handleUploadResourceFile}
+            />
+          </Card>
+
+          {/* Add external link resource card */}
           <Card className="space-y-4">
             <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">
-              Add Lesson Resource
+              Or Add External Link
             </h3>
-            
+
             <div className="space-y-3.5 text-slate-300">
               <Input
                 id="resTitle"
                 label="Resource Title"
                 value={resTitle}
                 onChange={(e) => setResTitle(e.target.value)}
-                placeholder="e.g. Cheatsheet notes PDF"
+                placeholder="e.g. GitHub Repository Notes"
               />
               <Select
                 id="resType"
@@ -269,24 +298,17 @@ export default function LessonForm() {
               />
               <Input
                 id="resUrl"
-                label="Resource Link URL"
+                label="Resource URL"
                 value={resUrl}
                 onChange={(e) => setResUrl(e.target.value)}
                 placeholder="https://..."
               />
-              <Input
-                id="resSize"
-                label="File Size"
-                value={resSize}
-                onChange={(e) => setResSize(e.target.value)}
-                placeholder="e.g. 1.2 MB or 45 KB"
-              />
-              <Button 
-                variant="outline" 
-                onClick={handleAddResource} 
+              <Button
+                variant="outline"
+                onClick={handleAddResource}
                 className="w-full justify-center text-xs mt-2 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10"
               >
-                ＋ Add Resource
+                ＋ Add Link Resource
               </Button>
             </div>
           </Card>
@@ -294,24 +316,24 @@ export default function LessonForm() {
           {/* Resources list card */}
           <Card className="space-y-3">
             <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">
-              Resources List ({resources.length})
+              Attached Resources ({resources.length})
             </h3>
 
             {resources.length === 0 ? (
               <p className="text-xs text-slate-500 font-semibold italic text-center py-4">
-                No resources uploaded.
+                No resources attached yet.
               </p>
             ) : (
               <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                 {resources.map((res, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-xs"
                   >
                     <div className="min-w-0 pr-2">
                       <h4 className="font-bold text-slate-200 truncate">{res.title}</h4>
                       <div className="flex gap-2 text-[10px] text-slate-500 mt-0.5">
-                        <span className="uppercase text-indigo-400">{res.type}</span>
+                        <span className="uppercase text-indigo-400 font-bold">{res.type}</span>
                         <span>•</span>
                         <span>{res.size}</span>
                       </div>

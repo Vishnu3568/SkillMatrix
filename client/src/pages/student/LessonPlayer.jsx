@@ -279,28 +279,54 @@ export default function LessonPlayer() {
 
           <Divider />
 
-          {/* Resources */}
+          {/* Resources & Attachments */}
           <div className="space-y-3">
             <h3 className="text-sm font-bold text-slate-200">Resources & Attachments</h3>
             {lesson.resources && lesson.resources.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {lesson.resources.map((res, index) => (
-                  <a
-                    key={index}
-                    href={res.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between p-3 rounded-lg border border-slate-800 bg-slate-950/40 hover:border-slate-700 hover:bg-slate-900/20 text-xs font-semibold text-slate-300"
-                  >
-                    <div className="truncate pr-2">
-                      <span className="text-[10px] uppercase text-indigo-400 block mb-0.5">
-                        {res.type}
-                      </span>
-                      <span className="truncate block font-bold text-slate-200">{res.title}</span>
+                {lesson.resources.map((res, index) => {
+                  const getIcon = (type) => {
+                    switch (type?.toLowerCase()) {
+                      case 'pdf': return '📄';
+                      case 'zip': return '📦';
+                      case 'image': return '🖼️';
+                      case 'code': return '💻';
+                      case 'link': return '🔗';
+                      default: return '📎';
+                    }
+                  };
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-slate-700/80 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 pr-2">
+                        <span className="text-xl select-none">{getIcon(res.type)}</span>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-extrabold text-slate-100 truncate">
+                            {res.title}
+                          </h4>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-semibold mt-0.5">
+                            <span className="uppercase text-indigo-400 font-bold">{res.type}</span>
+                            <span>•</span>
+                            <span>{res.size || '0 KB'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <a
+                        href={res.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                        className="shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white font-bold text-xs transition-colors"
+                      >
+                        Download ⬇
+                      </a>
                     </div>
-                    <span className="text-slate-500 text-[10px] shrink-0">{res.size}</span>
-                  </a>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="text-xs text-slate-500 font-semibold italic">
