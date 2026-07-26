@@ -63,6 +63,7 @@ const {
   lessonProgressRouter,
   courseProgressRouter,
 } = require('./routes/progress');
+const dashboardRouter = require('./routes/dashboard');
 
 app.use('/api/auth', authRouter);
 app.use('/api/courses', courseRouter);
@@ -74,6 +75,7 @@ app.use('/api/lessons/:lessonId', lessonProgressRouter);
 app.use('/api/enrollments', enrollmentRouter);
 app.use('/api/my-learning', myLearningRouter);
 app.use('/api/admin/enrollments', adminEnrollmentRouter);
+app.use('/api/admin', dashboardRouter);
 
 // 6. Catch-all 404 Route handler
 app.use((req, res, next) => {
