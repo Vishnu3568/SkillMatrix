@@ -31,6 +31,9 @@ const LessonPlayer = lazy(() => import('../pages/student/LessonPlayer'));
 // Student portal modules
 const MyLearning = lazy(() => import('../pages/student/MyLearning'));
 
+// Admin dashboard module
+const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
+
 
 
 function PagePlaceholder({ name, phase }) {
@@ -94,7 +97,7 @@ export default function AppRoutes() {
             {/* Admin Dashboard Workspace */}
             <Route element={<RoleRoute allowedRoles={['admin']} />}>
               <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminLayout />}>
-                <Route index element={<PagePlaceholder name="Admin Console" phase="Phase 4 (Course/Lesson CRUD)" />} />
+                <Route index element={<AdminDashboard />} />
                 <Route path="/admin/courses" element={<CourseManagement />} />
                 <Route path="/admin/courses/new" element={<CourseForm />} />
                 <Route path="/admin/courses/edit/:id" element={<CourseForm />} />
