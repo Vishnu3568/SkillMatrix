@@ -63,7 +63,12 @@ const {
   lessonProgressRouter,
   courseProgressRouter,
 } = require('./routes/progress');
+const path = require('path');
 const dashboardRouter = require('./routes/dashboard');
+const uploadRouter = require('./routes/upload');
+
+// Serve uploaded static assets
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 app.use('/api/auth', authRouter);
 app.use('/api/courses', courseRouter);
@@ -76,6 +81,7 @@ app.use('/api/enrollments', enrollmentRouter);
 app.use('/api/my-learning', myLearningRouter);
 app.use('/api/admin/enrollments', adminEnrollmentRouter);
 app.use('/api/admin', dashboardRouter);
+app.use('/api/uploads', uploadRouter);
 
 // 6. Catch-all 404 Route handler
 app.use((req, res, next) => {
