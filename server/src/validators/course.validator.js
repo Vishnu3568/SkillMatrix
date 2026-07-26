@@ -39,7 +39,21 @@ const createCourseSchema = z.object({
 
 const updateCourseSchema = createCourseSchema.partial();
 
+const listCoursesQuerySchema = z.object({
+  search: z.string().optional(),
+  category: z.string().optional(),
+  level: z.string().optional(),
+  status: z.string().optional(),
+  tags: z.union([z.string(), z.array(z.string())]).optional(),
+  createdBy: z.string().optional(),
+  publishedOnly: z.union([z.string(), z.boolean()]).optional(),
+  sort: z.string().optional(),
+  page: z.union([z.string(), z.number()]).optional(),
+  limit: z.union([z.string(), z.number()]).optional(),
+});
+
 module.exports = {
   createCourseSchema,
   updateCourseSchema,
+  listCoursesQuerySchema,
 };
