@@ -18,7 +18,6 @@ let adminId;
 let studentId;
 let studentToken;
 let course1Id;
-let course2Id;
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
@@ -75,7 +74,7 @@ beforeEach(async () => {
   });
   course1Id = c1._id;
 
-  const c2 = await Course.create({
+  await Course.create({
     title: 'Zeta Node.js Microservices',
     shortDescription: 'Scalable backend API services',
     description: 'Detailed Node.js guide',
@@ -86,7 +85,6 @@ beforeEach(async () => {
     tags: ['node', 'express', 'backend'],
     createdBy: adminId,
   });
-  course2Id = c2._id;
 
   await Course.create({
     title: 'Draft Python Fundamentals',

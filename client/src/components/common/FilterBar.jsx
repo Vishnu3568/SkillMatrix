@@ -92,7 +92,7 @@ export default function FilterBar({
 
             {search && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-semibold">
-                Search: "{search}"
+                Search: &quot;{search}&quot;
                 <button
                   type="button"
                   onClick={() => onSearchChange('')}
