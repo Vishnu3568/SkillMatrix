@@ -19,6 +19,32 @@ export const getCourse = async (slug) => {
 };
 
 /**
+ * Fetches top enrolled popular courses.
+ * @param {number} limit 
+ */
+export const getPopularCourses = async (limit = 6) => {
+  const response = await api.get('/courses/popular', { params: { limit } });
+  return response.data;
+};
+
+/**
+ * Fetches personalized recommended courses.
+ * @param {number} limit 
+ */
+export const getRecommendedCourses = async (limit = 6) => {
+  const response = await api.get('/courses/recommended', { params: { limit } });
+  return response.data;
+};
+
+/**
+ * Fetches authenticated student's recent learning status.
+ */
+export const getRecentLearning = async () => {
+  const response = await api.get('/courses/recent-learning');
+  return response.data;
+};
+
+/**
  * Creates a new Course.
  * @param {Object} data Create Course Payload
  */

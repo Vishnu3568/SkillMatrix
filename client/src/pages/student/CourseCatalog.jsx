@@ -3,42 +3,38 @@ import { useNavigate } from 'react-router-dom';
 import * as courseService from '../../services/courseService';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
-import Input from '../../components/common/Input';
-import Select from '../../components/common/Select';
-import Button from '../../components/common/Button';
 import Skeleton from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
 import PageHeader from '../../components/common/PageHeader';
+import FilterBar from '../../components/common/FilterBar';
+import Pagination from '../../components/common/Pagination';
+import CourseGrid from '../../components/common/CourseGrid';
 import useToast from '../../hooks/useToast';
-import { COURSE_LEVELS } from '../../constants/course';
 
 export default function CourseCatalog() {
   const navigate = useNavigate();
   const toast = useToast();
-  
+
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [level, setLevel] = useState('');
-  
+  const [sort, setSort] = useState('newest');
+
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Available Category Options
   const categories = [
-    { value: 'Web Development', label: 'Web Development' },
-    { value: 'Mobile Development', label: 'Mobile Development' },
-    { value: 'Data Science', label: 'Data Science' },
-    { value: 'Design', label: 'Design' },
-    { value: 'Business', label: 'Business' },
+    'Web Development',
+    'Mobile Development',
+    'Backend Development',
+    'Frontend Development',
+    'Data Science',
+    'Design',
+    'Business',
   ];
-
-  const levels = Object.entries(COURSE_LEVELS).map(([key, val]) => ({
-    value: val,
-    label: key.charAt(0) + key.slice(1).toLowerCase(),
-  }));
 
   useEffect(() => {
     const loadCourses = async () => {
@@ -48,6 +44,7 @@ export default function CourseCatalog() {
           search,
           category,
           level,
+          sort,
           page,
           limit: 6,
         });
@@ -62,60 +59,54 @@ export default function CourseCatalog() {
       }
     };
 
-    const handler = setTimeout(() => {
-      loadCourses();
-    }, 300); // Debounce search changes
+    loadCourses();
+  }, [search, category, level, sort, page, toast]);
 
-    return () => clearTimeout(handler);
-  }, [search, category, level, page, toast]);
+  const handleClearFilters = () => {
+    setSearch('');
+    setCategory('');
+    setLevel('');
+    setSort('newest');
+    setPage(1);
+  };
 
   return (
     <div className="space-y-8">
-      <PageHeader 
-        title="Course Catalog" 
+      <PageHeader
+        title="Course Catalog"
         subtitle="Explore our library of premium interactive courses."
       />
 
       {/* Filter Toolbar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/40 p-4 rounded-xl border border-slate-800/60">
-        <Input
-          id="search-catalog"
-          placeholder="Search title, tags..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          label="Search"
-        />
-        <Select
-          id="category-filter"
-          options={categories}
-          value={category}
-          onChange={(e) => {
-            setCategory(e.target.value);
-            setPage(1);
-          }}
-          placeholder="All Categories"
-          label="Category"
-        />
-        <Select
-          id="level-filter"
-          options={levels}
-          value={level}
-          onChange={(e) => {
-            setLevel(e.target.value);
-            setPage(1);
-          }}
-          placeholder="All Levels"
-          label="Difficulty Level"
-        />
-      </div>
+      <FilterBar
+        search={search}
+        onSearchChange={(val) => {
+          setSearch(val);
+          setPage(1);
+        }}
+        category={category}
+        onCategoryChange={(val) => {
+          setCategory(val);
+          setPage(1);
+        }}
+        level={level}
+        onLevelChange={(val) => {
+          setLevel(val);
+          setPage(1);
+        }}
+        sort={sort}
+        onSortChange={(val) => {
+          setSort(val);
+          setPage(1);
+        }}
+        categories={categories}
+        onClearFilters={handleClearFilters}
+      />
 
       {/* Courses Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((n) => (
+        <CourseGrid cols="three">
+          {[1, 2, 3, 4, 5, 6].map((n) => (
             <Card key={n} className="space-y-4">
               <Skeleton variant="rect" height="180px" />
               <Skeleton variant="text" width="40%" />
@@ -123,44 +114,39 @@ export default function CourseCatalog() {
               <Skeleton variant="text" width="80%" />
             </Card>
           ))}
-        </div>
+        </CourseGrid>
       ) : courses.length === 0 ? (
-        <EmptyState 
-          title="No courses match your criteria" 
-          description="Try clearing your search query or adjusting level filters."
+        <EmptyState
+          title="No courses match your criteria"
+          description="Try adjusting search terms or clearing difficulty filters."
           action={
-            (search || category || level) && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  setSearch('');
-                  setCategory('');
-                  setLevel('');
-                  setPage(1);
-                }}
+            (search || category || level || sort !== 'newest') && (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg transition-colors"
               >
-                Reset Filters
-              </Button>
+                Reset All Filters
+              </button>
             )
           }
         />
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <CourseGrid cols="three">
             {courses.map((course) => (
-              <Card 
-                key={course._id} 
-                className="flex flex-col h-full hover:shadow-xl hover:shadow-indigo-500/5 hover:border-slate-700/60"
+              <Card
+                key={course._id}
+                className="flex flex-col h-full hover:shadow-xl hover:shadow-indigo-500/5 hover:border-slate-700/60 cursor-pointer group"
                 onClick={() => navigate(`/courses/${course.slug}`)}
               >
                 {/* Thumbnail */}
-                <div className="h-44 w-full bg-slate-900 rounded-lg overflow-hidden border border-slate-800/80 mb-4 shrink-0">
+                <div className="h-44 w-full bg-slate-900 rounded-lg overflow-hidden border border-slate-800/80 mb-4 shrink-0 relative">
                   {course.thumbnailUrl ? (
-                    <img 
-                      src={course.thumbnailUrl} 
-                      alt={course.title} 
-                      className="h-full w-full object-cover"
+                    <img
+                      src={course.thumbnailUrl}
+                      alt={course.title}
+                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center text-slate-600 font-extrabold text-lg select-none">
@@ -176,11 +162,9 @@ export default function CourseCatalog() {
                       <span className="text-[10px] uppercase tracking-wider font-extrabold text-indigo-400">
                         {course.category}
                       </span>
-                      <Badge variant="primary">
-                        {course.level}
-                      </Badge>
+                      <Badge variant="primary">{course.level}</Badge>
                     </div>
-                    <h3 className="font-extrabold text-slate-100 line-clamp-1">
+                    <h3 className="font-extrabold text-slate-100 line-clamp-1 group-hover:text-indigo-400 transition-colors">
                       {course.title}
                     </h3>
                     <p className="text-slate-400 text-xs sm:text-sm line-clamp-2 leading-relaxed">
@@ -190,37 +174,21 @@ export default function CourseCatalog() {
 
                   <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between text-xs text-slate-500 font-semibold">
                     <span>⏳ {course.estimatedDuration} mins</span>
-                    <span className="text-indigo-400 hover:text-indigo-300">View Course →</span>
+                    <span className="text-indigo-400 font-bold group-hover:translate-x-0.5 transition-transform">
+                      View Course →
+                    </span>
                   </div>
                 </div>
               </Card>
             ))}
-          </div>
+          </CourseGrid>
 
-          {/* Pagination Buttons */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-3 pt-6">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <span className="text-xs text-slate-400 font-bold select-none">
-                Page {page} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          )}
+          {/* Accessible Pagination */}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={(p) => setPage(p)}
+          />
         </>
       )}
     </div>
