@@ -38,6 +38,7 @@ const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
  * PagePlaceholder Component
  * Fallback layout for future module expansions.
  */
+function PagePlaceholder({ name, phase }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-20 px-4 gap-4 max-w-md mx-auto">
       <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100">{name}</h2>
