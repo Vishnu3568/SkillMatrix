@@ -1,0 +1,195 @@
+openapi: 3.0.3
+info:
+  title: SkillMatrix LMS API Specification
+  description: >
+    Production-ready RESTful API for SkillMatrix Learning Management System (LMS).
+    Supports Authentication, RBAC, Course Management, Lesson Player, Enrollment,
+    Progress Tracking, Discovery, Media Uploads, and Admin Analytics.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000
+    description: Local Development Server
+paths:
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, email, password]
+              properties:
+                fullName: { type: string, example: "Jane Doe" }
+                email: { type: string, example: "jane@example.com" }
+                password: { type: string, example: "Password123!" }
+      responses:
+        '201':
+          description: User account created successfully
+        '400':
+          description: Validation error or duplicate email
+
+  /api/auth/login:
+    post:
+      summary: Authenticate user & issue JWT tokens
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, example: "student@example.com" }
+                password: { type: string, example: "Password123!" }
+      responses:
+        '200':
+          description: Authentication successful
+
+  /api/auth/me:
+    get:
+      summary: Retrieve current authenticated user profile
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Current user object }
+        '401': { description: Unauthorized }
+
+  /api/courses:
+    get:
+      summary: List published courses with search & filters
+      tags: [Courses]
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: level
+          in: query
+          schema: { type: string, enum: [beginner, intermediate, advanced] }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [newest, oldest, alphabetical, most_enrolled, highest_completion] }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+      responses:
+        '200': { description: List of courses with pagination metadata }
+
+    post:
+      summary: Scaffold a new draft course (Admin only)
+      tags: [Courses]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, shortDescription, description]
+              properties:
+                title: { type: string, example: "Advanced Node.js Architecture" }
+                shortDescription: { type: string }
+                description: { type: string }
+                category: { type: string, default: "Web Development" }
+                level: { type: string, default: "intermediate" }
+                estimatedDuration: { type: integer, example: 120 }
+      responses:
+        '201': { description: Course created as DRAFT }
+
+  /api/courses/popular:
+    get:
+      summary: Get top enrolled popular courses
+      tags: [Discovery]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 6 }
+      responses:
+        '200': { description: List of popular courses }
+
+  /api/courses/recommended:
+    get:
+      summary: Get personalized recommended courses
+      tags: [Discovery]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: List of recommended courses }
+
+  /api/courses/recent-learning:
+    get:
+      summary: Get student recent learning status & continue target
+      tags: [Discovery]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Recent learning status }
+
+  /api/courses/{slug}:
+    get:
+      summary: Fetch single course details by slug or ID
+      tags: [Courses]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Course details object }
+        '404': { description: Course not found }
+
+  /api/admin/dashboard:
+    get:
+      summary: Fetch real-time Admin Analytics & Metrics
+      tags: [Admin Dashboard]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Overview metrics, top courses, and activity feed }
+        '403': { description: Forbidden for non-admins }
+
+  /api/uploads/image:
+    post:
+      summary: Upload course/lesson thumbnail image
+      tags: [Uploads]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201': { description: File uploaded, returns static URL }
+
+  /api/uploads/resource:
+    post:
+      summary: Upload PDF/ZIP resource file
+      tags: [Uploads]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201': { description: Resource document uploaded }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
