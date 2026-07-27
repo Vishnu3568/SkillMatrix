@@ -180,7 +180,8 @@ const listLessons = async (courseId, queryOptions, userRole) => {
 
   const lessons = await Lesson.find(filter)
     .populate('createdBy', 'fullName avatarUrl')
-    .sort({ order: 1 });
+    .sort({ order: 1 })
+    .lean();
 
   return lessons;
 };
