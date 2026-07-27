@@ -16,19 +16,35 @@ const app = express();
 app.use(httpLogger);
 
 // 2. Global Security Middlewares
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+        frameSrc: ["'self'", 'https://www.youtube.com', 'https://player.vimeo.com'],
+        connectSrc: ["'self'"],
+      },
+    },
+  })
+);
 
 const corsOptions = {
   origin: env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
-  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 app.use(cors(corsOptions));
 
+// Standard API Rate Limiter
 const limiter = rateLimit({
-  windowMs: env.RATE_LIMIT_WINDOW,
-  max: env.RATE_LIMIT_MAX,
+  windowMs: env.RATE_LIMIT_WINDOW || 15 * 60 * 1000,
+  max: env.NODE_ENV === 'test' ? 1000 : env.RATE_LIMIT_MAX || 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -39,7 +55,25 @@ const limiter = rateLimit({
     },
   },
 });
+
+// Strict Rate Limiter for Authentication Endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: env.NODE_ENV === 'test' ? 1000 : 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many authentication attempts, please try again in 15 minutes.',
+    },
+  },
+});
+
 app.use(limiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 // 3. Request Parsers & Size Limits
 app.use(express.json({ limit: '10kb' }));
