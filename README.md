@@ -1,14 +1,27 @@
-# SkillMatrix (LMS) - Phase 2A Approved
+# SkillMatrix (LMS) - Production Ready Enterprise Platform
 
-SkillMatrix is a production-grade Learning Management System (LMS) built with React, Express, Node.js, and MongoDB.
+SkillMatrix is an enterprise-grade Learning Management System (LMS) built with React, Vite, Node.js, Express, and MongoDB. It features RBAC Authentication, Course Management, Lesson Player, Enrollment, Progress Tracking, Admin Analytics Dashboard, Search & Discovery, Media Uploads, and Production Security Hardening.
+
+---
+
+## Completed Architecture Modules
+- ✓ **Authentication & Security**: JWT access tokens, HttpOnly refresh cookies, session hashes, Bcrypt, Helmet CSP, CORS, rate limiting.
+- ✓ **Course Management**: Course creation, metadata editing, difficulty levels, status publishing/archiving, thumbnail uploads.
+- ✓ **Lesson Management**: Video lesson player, interactive syllabus, lesson ordering/reordering, free guest preview, resource attachments.
+- ✓ **Enrollment System**: Student course enrollments, active learning portal, duplicate protection.
+- ✓ **Progress Tracking**: Real-time course completion percentage calculation, lesson status tracking (`not_started`, `in_progress`, `completed`).
+- ✓ **Admin Dashboard Analytics**: Real-time analytics overview cards, top enrolled courses, latest enrollments, student registrations, activity feed.
+- ✓ **Search & Discovery**: Full-text search, multi-criteria filtering (category, level, tags), sorting (`most_enrolled`, `highest_completion`), popular & recommended course recommendation algorithms.
+- ✓ **Media Management & Resources**: File uploads (`multer` streaming), storage provider abstraction (local disk default, Cloudinary/S3 adapter), PDF/ZIP resource attachments.
+- ✓ **Production Hardening & DX**: Structured Pino logging, OpenAPI 3.0 specs, environment configuration templates, zero-warning ESLint enforcement.
 
 ---
 
 ## Tech Stack
-- **Frontend**: React, Vite, React Router DOM, Vanilla CSS.
-- **Backend**: Node.js, Express, Pino (Structured Logging), Mongoose (Database Connectivity), Zod (Data Validation).
+- **Frontend**: React, Vite, React Router DOM, Tailwind CSS.
+- **Backend**: Node.js, Express, Pino (Structured Logging), Mongoose (Database Connectivity), Zod (Validation), Multer (FileUploads).
 - **Security**: Helmet, CORS, Express Rate Limit, Mongo Sanitize, Cookie Parser.
-- **Testing**: Vitest, Supertest, MongoDB Memory Server, Playwright.
+- **Testing**: Vitest, Supertest, MongoDB Memory Server.
 
 ---
 
@@ -16,95 +29,67 @@ SkillMatrix is a production-grade Learning Management System (LMS) built with Re
 
 ```
 SkillMatrix/
- ├── client/                # Frontend Application (React + Vite)
+ ├── client/                # Frontend Application (React + Vite + Tailwind)
  │   ├── src/
- │   │   ├── assets/        # Static assets
- │   │   ├── components/    # Reusable UI components
- │   │   ├── constants/     # Routing paths and system UI constants
- │   │   ├── context/       # Global state providers
- │   │   ├── hooks/         # Custom hooks
- │   │   ├── layouts/       # Main navigation layout
- │   │   ├── pages/         # Container page components (Home, NotFound)
- │   │   ├── routes/        # Route declarations and route guards
- │   │   ├── services/      # Axios/fetch clients
- │   │   └── utils/         # Front helpers
- │   └── index.html
+ │   │   ├── components/    # Reusable UI components (FileUpload, ImagePreview, FilterBar, Pagination, etc.)
+ │   │   ├── constants/     # System constants and routing definitions
+ │   │   ├── context/       # Auth, Theme, and Toast context providers
+ │   │   ├── hooks/         # Custom React hooks (useToast, useTheme, useAuth)
+ │   │   ├── layouts/       # Role layouts (AdminLayout, StudentLayout, SharedLayout)
+ │   │   ├── pages/         # Container page components (Catalog, Dashboard, CourseForm, LessonPlayer, MyLearning)
+ │   │   ├── routes/        # App routing declarations, lazy loading, and route guards
+ │   │   └── services/      # Axios API service bindings
  └── server/                # Backend API (Node.js + Express)
      ├── src/
-     │   ├── config/        # Environment configurations
-     │   ├── constants/     # Reusable domain constants (roles, statuses)
-     │   ├── database/      # Mongoose connections and retry strategies
-     │   ├── errors/        # Custom error classes (validation, authorization)
-     │   ├── logger/        # Pino structured logger configuration
-     │   ├── middlewares/   # Express security / logging / error handlers
-     │   ├── responses/     # Standardized JSON response formatting
-     │   ├── utilities/     # Pure utility algorithms (slugs, dates, URLs)
-     │   ├── models/        # Mongoose database models (User)
-     │   ├── controllers/   # REST Controllers (Authentication)
-     │   ├── services/      # Business logic services (Auth, Password, JWT)
-     │   └── validators/    # Payload validation schemas (Zod)
-     └── server.js          # Server bootstrap entry point
+     │   ├── config/        # Environment variables & schema configuration
+     │   ├── constants/     # Domain enums & HTTP constants
+     │   ├── controllers/   # REST API controllers
+     │   ├── database/      # Mongoose database connection
+     │   ├── errors/        # Custom operational error classes
+     │   ├── logger/        # Pino structured logging
+     │   ├── middlewares/   # Auth, validation, rate limiting, security, error handling
+     │   ├── models/        # Mongoose schemas (User, Course, Lesson, Enrollment, Progress)
+     │   ├── routes/        # Express REST route routers
+     │   ├── services/      # Core business logic services
+     │   ├── tests/         # Vitest integration test suite (71 tests passing)
+     │   └── validators/    # Zod payload validation schemas
+     └── public/uploads/    # Local media uploads storage directory
 ```
 
 ---
 
-## Phase 2A: Backend Authentication
-Phase 2A implements the secure backend authentication system using JWT access tokens, rotated HttpOnly refresh cookies, password encryption, Zod filters, and session validation hooks.
+## Quick Setup Instructions
 
-- **[Phase 2A Completion Audit Report](docs/10_phase2a_audit.md)**: Detailed verification logs, audit matrix, security checklists, and Vitest endpoint validations.
-
----
-
-## Environment Variables
-
-Create a `/server/.env` file based on `/server/.env.example`:
-
-| Variable Name | Description | Default / Example Value |
-| :--- | :--- | :--- |
-| `PORT` | Local network port for Express server. | `5000` |
-| `NODE_ENV` | Running node mode environment. | `development` |
-| `MONGODB_URI` | Connection URI for the MongoDB database. | `mongodb://127.0.0.1:27017/skillmatrix` |
-| `JWT_ACCESS_SECRET` | Secret key for signing Access Tokens. | `your_access_secret` |
-| `JWT_REFRESH_SECRET`| Secret key for signing Refresh Tokens. | `your_refresh_secret` |
-| `CLIENT_URL` | Trusted CORS origins allowed to access backend. | `http://localhost:5173` |
-| `CLOUDINARY_CLOUD_NAME`| Cloudinary account cloud identifier name. | `your_cloud_name` |
-| `CLOUDINARY_API_KEY` | Cloudinary API access key. | `your_api_key` |
-| `CLOUDINARY_API_SECRET`| Cloudinary API secret authorization key. | `your_api_secret` |
-| `RATE_LIMIT_WINDOW` | Milliseconds window for IP request counting. | `900000` (15 minutes) |
-| `RATE_LIMIT_MAX` | Max requests allowed per IP within the window. | `100` |
-
----
-
-## Setup Instructions
-
-1. **Workspace Installation**:
-   Install all dependencies from the root directory:
+1. **Clone & Install Dependencies**:
    ```bash
    npm install
    ```
 
-2. **Configure Environment**:
-   Duplicate `/server/.env.example` to `/server/.env` and edit values.
+2. **Configure Environment Variables**:
+   Copy `.env.example` to `.env` in the root workspace and `server/.env`:
+   ```bash
+   cp .env.example .env
+   cp server/.env.example server/.env
+   ```
 
-3. **Start Development Servers**:
-   - Start backend: `npm run dev:server` (running on http://localhost:5000)
-   - Start frontend: `npm run dev:client` (running on http://localhost:5173)
+3. **Run Development Mode**:
+   ```bash
+   npm run dev
+   ```
+   - Server runs at: `http://localhost:5000`
+   - Client runs at: `http://localhost:5173`
+
+4. **Execute Verification Commands**:
+   ```bash
+   npm run lint          # Run ESLint checks across workspace (0 errors)
+   npm run build         # Build client production bundle
+   npm test              # Run server integration test suite (71 passing tests)
+   ```
 
 ---
 
-## Development Commands
-
-- `npm run dev`: Boots both server and client development workers.
-- `npm run lint`: Validates files across both projects using ESLint rules.
-- `npm run format`: Formats code throughout the codebase using Prettier rules.
-- `npm run build`: Packages both applications for production distribution.
-- `npm run test --prefix server`: Executes the Vitest backend authentication integration tests.
-
----
-
-## Future Roadmap
-- **Phase 2B**: Frontend Authentication (React context, hooks, layout routing, portals).
-- **Phase 3**: Course catalog discovery, file uploads, and content schemas.
-- **Phase 4**: Enrollment logs and course administration controls.
-- **Phase 5**: Video lesson viewer and player progress logging.
-- **Phase 6**: Analytical tracking charts and reporting panels.
+## Detailed Documentation
+- 📘 [API Specification (OpenAPI 3.0)](docs/openapi.yaml)
+- 📐 [Architecture Overview](docs/ARCHITECTURE.md)
+- 🚀 [Deployment Guide](docs/DEPLOYMENT.md)
+- 📊 [Phase 11 Audit Report](docs/20_phase11_audit.md)
