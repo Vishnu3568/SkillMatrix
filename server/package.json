@@ -25,7 +25,6 @@
     "multer": "^2.2.0",
     "pino": "^8.20.0",
     "pino-http": "^9.0.0",
-    "vite": "8.1.5",
     "zod": "^3.22.4"
   },
   "devDependencies": {
