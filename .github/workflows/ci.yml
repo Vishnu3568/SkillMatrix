@@ -22,7 +22,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Workspace Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run ESLint Quality Check
         run: npm run lint
