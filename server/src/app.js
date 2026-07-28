@@ -104,6 +104,28 @@ const uploadRouter = require('./routes/upload');
 // Serve uploaded static assets
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
+const mongoose = require('mongoose');
+
+// Health Check Endpoint
+app.get('/health', (req, res) => {
+  const isDbConnected = mongoose.connection.readyState === 1;
+  return res.status(200).json({
+    success: true,
+    message: 'SkillMatrix API is healthy',
+    data: {
+      status: isDbConnected ? 'ok' : 'degraded',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      environment: env.NODE_ENV,
+      database: {
+        connected: isDbConnected,
+        state: isDbConnected ? 'connected' : 'disconnected',
+      },
+    },
+  });
+});
+
 app.use('/api/auth', authRouter);
 app.use('/api/courses', courseRouter);
 app.use('/api/courses/:courseId/lessons', courseLessonRouter);
