@@ -5,7 +5,6 @@
 [![Node.js](https://img.shields.io/badge/Node.js-v18.x-green.svg?style=for-the-badge)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-v18.2-blue.svg?style=for-the-badge)](https://react.dev/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-v6.0-forestgreen.svg?style=for-the-badge)](https://www.mongodb.com/)
-[![License](https://img.shields.io/badge/license-MIT-slate.svg?style=for-the-badge)](LICENSE)
 
 SkillMatrix is an enterprise-grade, high-performance Learning Management System (LMS) built with **React, Vite, Node.js, Express, and MongoDB**. It features dual-token JWT authentication, Role-Based Access Control (RBAC), interactive video lesson playback, real-time progress calculations, Admin analytics dashboards, full-text search & recommendation discovery algorithms, storage provider abstraction, multi-stage Docker containerization, and GitHub Actions CI/CD automation.
 
@@ -299,9 +298,3 @@ docker-compose up -d --build
       Tests  74 passed (74)
    Duration  4.52s
 ```
-
----
-
-## 📄 License
-
-SkillMatrix is open-source software licensed under the [MIT License](LICENSE).
