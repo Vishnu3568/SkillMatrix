@@ -302,6 +302,6 @@ docker-compose up -d --build
 
 ---
 
-## 📄 License & Audit
+## 📄 License
 
-SkillMatrix is licensed under the [MIT License](LICENSE). Detailed phase completion audit reports are located in the [docs/](docs/) directory.
+SkillMatrix is open-source software licensed under the [MIT License](LICENSE).
