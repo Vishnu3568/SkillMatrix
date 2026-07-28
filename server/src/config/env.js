@@ -5,6 +5,14 @@ const dotenv = require('dotenv');
 const envPath = path.resolve(__dirname, '../../.env');
 dotenv.config({ path: envPath });
 
+// Fallback defaults for testing environment when .env is omitted in CI
+if (process.env.NODE_ENV === 'test') {
+  process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/skillmatrix_test';
+  process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'test_jwt_access_secret_key_min_32_chars_long';
+  process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_jwt_refresh_secret_key_min_32_chars_long';
+  process.env.CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+}
+
 const requiredEnvVars = [
   'MONGODB_URI',
   'JWT_ACCESS_SECRET',
