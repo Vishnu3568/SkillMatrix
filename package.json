@@ -17,7 +17,8 @@
     "format": "npm run format:server && npm run format:client",
     "build:server": "npm run build --prefix server",
     "build:client": "npm run build --prefix client",
-    "build": "npm run build:server && npm run build:client"
+    "build": "npm run build:server && npm run build:client",
+    "test": "npm run test --prefix server"
   },
   "devDependencies": {
     "prettier": "^3.2.5"
