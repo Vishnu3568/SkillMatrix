@@ -38,7 +38,9 @@ jobs:
       - name: Build Vite Client for GitHub Pages
         env:
           GITHUB_PAGES: 'true'
-        run: npm run build --prefix client
+        run: |
+          npm run build --prefix client
+          cp client/dist/index.html client/dist/404.html
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
